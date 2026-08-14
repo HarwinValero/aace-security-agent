@@ -1,0 +1,23 @@
+{
+  "service": "WAFv2",
+  "rules": [
+    {
+      "check_id": "WAF-001",
+      "name": "Check-Association",
+      "logic": "Verify if WebACL is associated with an ALB or CloudFront",
+      "severity": "CRITICAL"
+    },
+    {
+      "check_id": "WAF-002",
+      "name": "Check-Rule-Capacity",
+      "logic": "Verify if at least one Managed Rule Group is active",
+      "severity": "HIGH"
+    },
+    {
+      "check_id": "WAF-003",
+      "name": "Check-Default-Action",
+      "logic": "Ensure DefaultAction is set to ALLOW (or BLOCK based on policy)",
+      "severity": "MEDIUM"
+    }
+  ]
+}   

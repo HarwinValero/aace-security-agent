@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reporte de Seguridad AWS — Alcaldía de Santiago de Cali — Agosto 2026</title>
+  <style>
+    :root {
+      --primary: #1a2744;
+      --accent: #c8a84b;
+      --danger: #e53935;
+      --warning: #f59e0b;
+      --success: #22c55e;
+      --info: #3b82f6;
+      --muted: #64748b;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── HEADER ── */
+    .report-header {
+      background: var(--primary);
+      color: #fff;
+      padding: 36px 48px 28px;
+      border-bottom: 4px solid var(--accent);
+    }
+    .report-header .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: .5px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .report-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .report-header .subtitle {
+      font-size: 15px;
+      color: #94a3b8;
+      margin-bottom: 18px;
+    }
+    .header-meta {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .header-meta span {
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    .header-meta strong { color: #fff; }
+
+    /* ── LAYOUT ── */
+    .report-body {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px 60px;
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 24px 28px;
+      margin-bottom: 36px;
+    }
+    .toc h2 { font-size: 16px; margin-bottom: 14px; color: var(--primary); }
+    .toc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 32px;
+    }
+    .toc-grid a {
+      color: var(--info);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 3px 0;
+      display: block;
+    }
+    .toc-grid a:hover { text-decoration: underline; }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 8px;
+      margin: 36px 0 20px;
+      scroll-margin-top: 16px;
+    }
+    .section-title span {
+      color: var(--accent);
+      margin-right: 8px;
+    }
+
+    /* ── KPI CARDS ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    @media(max-width:700px){ .kpi-grid { grid-template-columns: 1fr 1fr; } }
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 18px;
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .kpi-card .kpi-value {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.1;
+    }
+    .kpi-card .kpi-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .kpi-card.danger .kpi-value { color: var(--danger); }
+    .kpi-card.warning .kpi-value { color: var(--warning); }
+    .kpi-card.success .kpi-value { color: var(--success); }
+    .kpi-card.info .kpi-value { color: var(--info); }
+
+    /* ── RISK BADGE ── */
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .risk-badge.critico { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+    .risk-badge.alto { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .risk-badge.medio { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .risk-badge.bajo { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+
+    /* ── SCORE RING ── */
+    .score-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .score-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      text-align: center;
+      min-width: 120px;
+      flex: 1;
+    }
+    .score-item .s-val { font-size: 28px; font-weight: 800; }
+    .score-item .s-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .score-item.green .s-val { color: var(--success); }
+    .score-item.yellow .s-val { color: var(--warning); }
+    .score-item.red .s-val { color: var(--danger); }
+
+    /* ── ACCOUNT CARDS ── */
+    .account-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+    @media(max-width:650px){ .account-grid { grid-template-columns: 1fr; } }
+    .account-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .account-card .ac-header {
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .account-card.critico .ac-header { background: #fef2f2; border-bottom: 2px solid var(--danger); }
+    .account-card.alto .ac-header { background: #fffbeb; border-bottom: 2px solid var(--warning); }
+    .account-card .ac-name { font-weight: 700; font-size: 14px; }
+    .account-card .ac-id { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .account-card .ac-body { padding: 16px 18px; }
+    .ac-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .ac-row:last-child { border-bottom: none; }
+    .ac-row .label { color: var(--muted); }
+    .ic-ok { color: var(--success); font-weight: 700; }
+    .ic-fail { color: var(--danger); font-weight: 700; }
+    .ic-warn { color: var(--warning); font-weight: 700; }
+
+    /* ── TABLES ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+    .data-table thead tr { background: var(--primary); color: #fff; }
+    .data-table th { padding: 11px 14px; text-align: left; font-weight: 600; font-size: 12px; letter-spacing: .3px; }
+    .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .data-table tbody tr:hover { background: #f8fafc; }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+
+    /* ── PRIORITY ROWS ── */
+    .p-critico td:first-child { border-left: 3px solid var(--danger); }
+    .p-alto td:first-child { border-left: 3px solid var(--warning); }
+    .p-medio td:first-child { border-left: 3px solid var(--info); }
+    .p-bajo td:first-child { border-left: 3px solid var(--success); }
+
+    /* ── FINDING CARDS ── */
+    .finding-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .finding-card .f-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .finding-card .f-content .f-title { font-weight: 700; margin-bottom: 4px; }
+    .finding-card .f-content .f-desc { font-size: 13px; color: var(--muted); }
+    .finding-card .f-content .f-meta { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .finding-card.critico { border-left: 4px solid var(--danger); }
+    .finding-card.alto { border-left: 4px solid var(--warning); }
+
+    /* ── CALLOUT ── */
+    .callout {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .callout.info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+    .callout.warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .callout.danger { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .callout.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+
+    /* ── BUCKET LIST ── */
+    .bucket-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    @media(max-width:650px){ .bucket-grid { grid-template-columns: 1fr; } }
+    .bucket-item {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-family: 'Consolas', monospace;
+      color: #991b1b;
+    }
+    .bucket-item.sensitive {
+      background: #450a0a;
+      color: #fca5a5;
+      border-color: #7f1d1d;
+      font-weight: 600;
+    }
+
+    /* ── FOOTER ── */
+    .report-footer {
+      background: var(--primary);
+      color: #64748b;
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      margin-top: 48px;
+    }
+    .report-footer strong { color: #94a3b8; }
+
+    /* ── PRINT ── */
+    @media print {
+      .report-header { break-after: avoid; }
+      .section-title { break-before: page; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════ -->
+<header class="report-header">
+  <div class="badge">Confidencial · Uso Interno</div>
+  <h1>Reporte de Seguridad AWS</h1>
+  <div class="subtitle">Alcaldía de Santiago de Cali — Infraestructura Cloud</div>
+  <div class="header-meta">
+    <span>📅 Fecha: <strong>12 de Agosto de 2026</strong></span>
+    <span>🏢 Cuentas auditadas: <strong>2</strong></span>
+    <span>🌎 Región: <strong>us-east-1</strong></span>
+    <span>🔖 Generado: <strong>AEGIS Security Agent v2.1 + Kiro</strong></span>
+    <span>⏱ Timestamp: <strong>2026-08-12T21:29:42Z</strong></span>
+  </div>
+</header>
+
+<div class="report-body">
+
+  <!-- ══ TOC ══ -->
+  <div class="toc">
+    <h2>📋 Contenido</h2>
+    <div class="toc-grid">
+      <a href="#s1">1. Resumen Ejecutivo</a>
+      <a href="#s6">6. Almacenamiento S3</a>
+      <a href="#s2">2. Postura por Cuenta</a>
+      <a href="#s7">7. Monitoreo y Detección</a>
+      <a href="#s3">3. WAF — Web Application Firewall</a>
+      <a href="#s8">8. Cifrado y Compliance</a>
+      <a href="#s4">4. IAM — Identidades y Accesos</a>
+      <a href="#s9">9. Hallazgos Críticos</a>
+      <a href="#s5">5. EC2 y Security Groups</a>
+      <a href="#s10">10. Plan de Remediación</a>
+    </div>
+  </div>
+
+  <!-- ══ SECCIÓN 1 ══ -->
+  <h2 class="section-title" id="s1"><span>1.</span> Resumen Ejecutivo</h2>
+
+  <div class="kpi-grid">
+    <div class="kpi-card info">
+      <div class="kpi-value">2</div>
+      <div class="kpi-label">Cuentas AWS Auditadas</div>
+    </div>
+    <div class="kpi-card warning">
+      <div class="kpi-value">82</div>
+      <div class="kpi-label">Instancias EC2 (workload)</div>
+    </div>
+    <div class="kpi-card danger">
+      <div class="kpi-value">46</div>
+      <div class="kpi-label">Buckets S3 sin protección confirmada</div>
+    </div>
+    <div class="kpi-card danger">
+      <div class="kpi-value">5</div>
+      <div class="kpi-label">Hallazgos Críticos</div>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card success">
+      <div class="kpi-value">1</div>
+      <div class="kpi-label">WebACL WAF activo (CloudFront)</div>
+    </div>
+    <div class="kpi-card success">
+      <div class="kpi-value">2</div>
+      <div class="kpi-label">CloudTrail trails activos multi-región</div>
+    </div>
+    <div class="kpi-card warning">
+      <div class="kpi-value">2</div>
+      <div class="kpi-label">Security Groups con 0.0.0.0/0</div>
+    </div>
+    <div class="kpi-card danger">
+      <div class="kpi-value">3</div>
+      <div class="kpi-label">Servicios críticos OFF en portal</div>
+    </div>
+  </div>
+
+  <div class="callout danger">
+    <span>🔴</span>
+    <div><strong>Nivel de Riesgo Global: ALTO</strong> — La cuenta <code>alcaldia-cali-portal</code> (538944046717) opera sin WAF, GuardDuty, Security Hub ni AWS Config. Score global consolidado: <strong>79/100</strong>.</div>
+  </div>
+
+  <!-- Score summary -->
+  <div class="score-row">
+    <div class="score-item yellow"><div class="s-val">79</div><div class="s-label">WA Score Global</div></div>
+    <div class="score-item green"><div class="s-val">84</div><div class="s-label">Workload Score</div></div>
+    <div class="score-item red"><div class="s-val">75</div><div class="s-label">Portal Score</div></div>
+    <div class="score-item green"><div class="s-val">95</div><div class="s-label">Cost Score</div></div>
+    <div class="score-item green"><div class="s-val">90</div><div class="s-label">Reliability</div></div>
+    <div class="score-item yellow"><div class="s-val">60</div><div class="s-label">Sustainability</div></div>
+  </div>
+
+  <!-- ══ SECCIÓN 2 ══ -->
+  <h2 class="section-title" id="s2"><span>2.</span> Postura por Cuenta</h2>
+
+  <div class="account-grid">
+    <!-- WORKLOAD -->
+    <div class="account-card alto">
+      <div class="ac-header">
+        <div>
+          <div class="ac-name">alcaldia-cali-workload</div>
+          <div class="ac-id">Account ID: 363934983054 · us-east-1</div>
+        </div>
+        <span class="risk-badge alto">⚠️ ALTO</span>
+      </div>
+      <div class="ac-body">
+        <div class="ac-row"><span class="label">Security Score</span><strong>85/100</strong></div>
+        <div class="ac-row"><span class="label">Well-Arch Score</span><strong>84/100</strong></div>
+        <div class="ac-row"><span class="label">Maturity Level</span><span>Aceptable</span></div>
+        <div class="ac-row"><span class="label">WAF</span><span class="ic-ok">✔ Activo (CloudFront)</span></div>
+        <div class="ac-row"><span class="label">GuardDuty</span><span class="ic-ok">✔ Habilitado</span></div>
+        <div class="ac-row"><span class="label">Security Hub</span><span class="ic-ok">✔ Habilitado</span></div>
+        <div class="ac-row"><span class="label">AWS Config</span><span class="ic-ok">✔ Habilitado</span></div>
+        <div class="ac-row"><span class="label">CloudTrail</span><span class="ic-ok">✔ 2 trails activos</span></div>
+        <div class="ac-row"><span class="label">EC2 Instancias</span><span>82</span></div>
+        <div class="ac-row"><span class="label">SGs abiertos (0.0.0.0/0)</span><span class="ic-warn">⚠ 2</span></div>
+        <div class="ac-row"><span class="label">Buckets S3</span><span class="ic-fail">46 sin protección confirmada</span></div>
+        <div class="ac-row"><span class="label">Cifrado KMS</span><span class="ic-ok">✔ Sin recursos sin cifrar</span></div>
+        <div class="ac-row"><span class="label">Multi-AZ</span><span class="ic-ok">✔ Sí</span></div>
+        <div class="ac-row"><span class="label">WAF Logging</span><span class="ic-fail">✗ Deshabilitado</span></div>
+      </div>
+    </div>
+
+    <!-- PORTAL -->
+    <div class="account-card critico">
+      <div class="ac-header">
+        <div>
+          <div class="ac-name">alcaldia-cali-portal</div>
+          <div class="ac-id">Account ID: 538944046717 · us-east-1</div>
+        </div>
+        <span class="risk-badge critico">🔴 CRÍTICO</span>
+      </div>
+      <div class="ac-body">
+        <div class="ac-row"><span class="label">Security Score</span><strong style="color:var(--danger)">40/100</strong></div>
+        <div class="ac-row"><span class="label">Well-Arch Score</span><strong>75/100</strong></div>
+        <div class="ac-row"><span class="label">Maturity Level</span><span>Aceptable</span></div>
+        <div class="ac-row"><span class="label">WAF</span><span class="ic-fail">✗ No implementado</span></div>
+        <div class="ac-row"><span class="label">GuardDuty</span><span class="ic-fail">✗ Deshabilitado</span></div>
+        <div class="ac-row"><span class="label">Security Hub</span><span class="ic-fail">✗ Deshabilitado</span></div>
+        <div class="ac-row"><span class="label">AWS Config</span><span class="ic-fail">✗ Deshabilitado</span></div>
+        <div class="ac-row"><span class="label">CloudTrail</span><span class="ic-warn">⚠ Sin datos confirmados</span></div>
+        <div class="ac-row"><span class="label">EC2 Instancias</span><span>0</span></div>
+        <div class="ac-row"><span class="label">SGs abiertos</span><span class="ic-ok">✔ N/A</span></div>
+        <div class="ac-row"><span class="label">Buckets S3</span><span class="ic-warn">⚠ Sin datos</span></div>
+        <div class="ac-row"><span class="label">Cifrado KMS</span><span class="ic-ok">✔ Sin recursos sin cifrar</span></div>
+        <div class="ac-row"><span class="label">Multi-AZ</span><span class="ic-ok">✔ Sí</span></div>
+        <div class="ac-row"><span class="label">IAM Wildcard</span><span class="ic-ok">✔ 0 detectados</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECCIÓN 3 ══ -->
+  <h2 class="section-title" id="s3"><span>3.</span> WAF — Web Application Firewall</h2>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Cuenta</th>
+        <th>Estado</th>
+        <th>WebACL Name</th>
+        <th>Scope</th>
+        <th>ARN</th>
+        <th>Logging</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>alcaldia-cali-workload</strong></td>
+        <td><span class="ic-ok">✔ Activo</span></td>
+        <td><code>CreatedByCloudFront-edbade60</code></td>
+        <td>CLOUDFRONT</td>
+        <td style="font-size:11px;font-family:monospace">arn:aws:wafv2:us-east-1:363934983054:global/webacl/...</td>
+        <td><span class="ic-fail">✗ OFF</span></td>
+      </tr>
+      <tr>
+        <td><strong>alcaldia-cali-portal</strong></td>
+        <td><span class="ic-fail">✗ No implementado</span></td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warning">
+    <span>⚠️</span>
+    <div><strong>alcaldia-cali-workload:</strong> El WebACL está activo pero el logging WAF está deshabilitado. Se pierden las trazas de ataques bloqueados e intentos maliciosos. Habilitar logging hacia CloudWatch o S3 (control SEC-WAF-001).</div>
+  </div>
+  <div class="callout danger">
+    <span>🔴</span>
+    <div><strong>alcaldia-cali-portal:</strong> Sin ningún WebACL configurado. Los recursos web están completamente expuestos a ataques de Capa 7 (SQLi, XSS, DDoS, bots). Acción inmediata requerida — SLA: 24 horas.</div>
+  </div>
+
+  <!-- ══ SECCIÓN 4 ══ -->
+  <h2 class="section-title" id="s4"><span>4.</span> IAM — Identidades y Accesos</h2>
+
+  <div class="callout info">
+    <span>ℹ️</span>
+    <div>Los módulos IAM detallados no generaron salida en esta ejecución. Los datos provienen de la matriz de riesgo consolidada. Se recomienda re-ejecutar el auditor IAM para obtener el reporte de credenciales completo.</div>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Control IAM</th><th>alcaldia-cali-workload</th><th>alcaldia-cali-portal</th><th>Baseline</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Access Keys vencidas (+90 días)</td>
+        <td><span class="ic-ok">✔ 0 detectadas</span></td>
+        <td><span class="ic-ok">✔ 0 detectadas</span></td>
+        <td>CIS 1.12</td>
+      </tr>
+      <tr>
+        <td>Usuarios sin MFA</td>
+        <td><span class="ic-ok">✔ 0 detectados</span></td>
+        <td><span class="ic-ok">✔ 0 detectados</span></td>
+        <td>CIS 1.2 / SEC-IAM-001</td>
+      </tr>
+      <tr>
+        <td>Políticas wildcard (*:*)</td>
+        <td><span class="ic-ok">✔ 0 detectadas</span></td>
+        <td><span class="ic-ok">✔ 0 detectadas</span></td>
+        <td>CIS 1.16 / SEC-IAM-003</td>
+      </tr>
+      <tr>
+        <td>MFA cuenta root</td>
+        <td><span class="ic-warn">⚠ Sin confirmar</span></td>
+        <td><span class="ic-warn">⚠ Sin confirmar</span></td>
+        <td>CIS 1.2</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ══ SECCIÓN 5 ══ -->
+  <h2 class="section-title" id="s5"><span>5.</span> EC2 y Security Groups</h2>
+
+  <div class="kpi-grid">
+    <div class="kpi-card info"><div class="kpi-value">82</div><div class="kpi-label">EC2 Total (workload)</div></div>
+    <div class="kpi-card danger"><div class="kpi-value">2</div><div class="kpi-label">SGs con 0.0.0.0/0</div></div>
+    <div class="kpi-card success"><div class="kpi-value">0</div><div class="kpi-label">Instancias subutilizadas</div></div>
+    <div class="kpi-card success"><div class="kpi-value">0</div><div class="kpi-label">Recursos huérfanos</div></div>
+  </div>
+
+  <div class="callout warning">
+    <span>⚠️</span>
+    <div><strong>2 Security Groups</strong> en <code>alcaldia-cali-workload</code> tienen reglas con origen <code>0.0.0.0/0</code>. Requiere revisión urgente para verificar si exponen puertos críticos (SSH:22, RDP:3389, MySQL:3306, PostgreSQL:5432). Control: CIS 5.1 / SEC-NET-001.</div>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Cuenta</th><th>Total EC2</th><th>SGs con 0.0.0.0/0</th><th>Multi-AZ</th><th>Instancias Subutilizadas</th><th>Estado</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>alcaldia-cali-workload</strong></td>
+        <td>82</td>
+        <td><span class="ic-warn">⚠ 2</span></td>
+        <td><span class="ic-ok">✔ Sí</span></td>
+        <td>0</td>
+        <td><span class="risk-badge alto">⚠️ REVISAR</span></td>
+      </tr>
+      <tr>
+        <td><strong>alcaldia-cali-portal</strong></td>
+        <td>0</td>
+        <td>N/A</td>
+        <td><span class="ic-ok">✔ Sí</span></td>
+        <td>N/A</td>
+        <td><span class="risk-badge bajo">✅ N/A</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ══ SECCIÓN 6 ══ -->
+  <h2 class="section-title" id="s6"><span>6.</span> Almacenamiento S3</h2>
+
+  <div class="kpi-grid">
+    <div class="kpi-card danger"><div class="kpi-value">46</div><div class="kpi-label">Buckets sin protección confirmada</div></div>
+    <div class="kpi-card danger"><div class="kpi-value">0</div><div class="kpi-label">Lifecycle Policies</div></div>
+    <div class="kpi-card success"><div class="kpi-value">0</div><div class="kpi-label">Recursos sin cifrado KMS</div></div>
+    <div class="kpi-card success"><div class="kpi-value">0</div><div class="kpi-label">Sin SSL/TLS forzado</div></div>
+  </div>
+
+  <div class="callout danger">
+    <span>🔴</span>
+    <div><strong>46 buckets en alcaldia-cali-workload</strong> marcados como "Unprotected". Esto indica que Block Public Access no está confirmado a nivel de bucket individual. Los buckets sensibles deben priorizarse para remediación inmediata.</div>
+  </div>
+
+  <p style="margin-bottom:12px;font-weight:600;color:var(--danger)">🔴 Buckets de ALTA SENSIBILIDAD (prioridad inmediata):</p>
+  <div class="bucket-grid">
+    <div class="bucket-item sensitive">aca-terraform-state-prod</div>
+    <div class="bucket-item sensitive">aca-cloudtrail-logs-cloudtierdell-prd</div>
+    <div class="bucket-item sensitive">datic-s3-sap-bk-prd</div>
+    <div class="bucket-item sensitive">s3-cali-prd-orfeo-storage</div>
+    <div class="bucket-item sensitive">s3-cali-prd-orfeo-bodega</div>
+    <div class="bucket-item sensitive">s3-cali-prd-backup-dr-audit-logs</div>
+    <div class="bucket-item sensitive">s3-cali-prd-backups-piso15-alcaldiacali</div>
+    <div class="bucket-item sensitive">aca-backups-kvm</div>
+    <div class="bucket-item sensitive">aca-backups-migr</div>
+  </div>
+
+  <p style="margin-bottom:12px;font-weight:600;color:var(--warning)">⚠️ Todos los buckets auditados (46):</p>
+  <div class="bucket-grid">
+    <div class="bucket-item">aca-aws-service-discovery-bucket</div>
+    <div class="bucket-item">aca-identidad-visual</div>
+    <div class="bucket-item">aca-prod-cru-raw-data-bucket</div>
+    <div class="bucket-item">aca-prod-glue-etl-bucket</div>
+    <div class="bucket-item">aws-glue-assets-363934983054-us-east-1</div>
+    <div class="bucket-item">bucket-bk-db-organismos</div>
+    <div class="bucket-item">cdk-hnb659fds-assets-363934983054-us-east-1</div>
+    <div class="bucket-item">cf-templates-xx7cyrr5zks4-us-east-1</div>
+    <div class="bucket-item">cid-363934983054-data-local</div>
+    <div class="bucket-item">dacp-s3-pgc-ap-prd</div>
+    <div class="bucket-item">datic-portal-mw16may-delete</div>
+    <div class="bucket-item">datic-s3-backupcloudtierdell-prd</div>
+    <div class="bucket-item">datic-s3-copiasevs-prd</div>
+    <div class="bucket-item">do-not-delete-ssm-diagnosis-...</div>
+    <div class="bucket-item">exportedvcenter</div>
+    <div class="bucket-item">exportedvcenteronserver</div>
+    <div class="bucket-item">s3-cali-prd-alb-elb-cali-prod-logs</div>
+    <div class="bucket-item">s3-cali-prd-bckrman-pegasus</div>
+    <div class="bucket-item">s3-cali-prd-daas-audit-logs</div>
+    <div class="bucket-item">s3-cali-prd-daisy-bkt</div>
+    <div class="bucket-item">s3-cali-prd-daruma-aplicacion</div>
+    <div class="bucket-item">s3-cali-prd-dataproc-staging</div>
+    <div class="bucket-item">s3-cali-prd-dataproc-temp</div>
+    <div class="bucket-item">s3-cali-prd-datasync-task-report</div>
+    <div class="bucket-item">s3-cali-prd-infra-mc</div>
+    <div class="bucket-item">s3-cali-prd-katana</div>
+    <div class="bucket-item">s3-cali-prd-migrar-gce-vmware</div>
+    <div class="bucket-item">s3-cali-prd-migrate-v5-audit-logs</div>
+    <div class="bucket-item">s3-cali-prd-oraclerman</div>
+    <div class="bucket-item">s3-cali-prd-podmanbucket</div>
+    <div class="bucket-item">s3-cali-prd-repository-01</div>
+    <div class="bucket-item">s3-cali-prd-secretaria-turismo-audit-logs</div>
+    <div class="bucket-item">s3-cali-prd-shared-vpc-audit-logs</div>
+    <div class="bucket-item">s3-cali-prd-vmware-audit-logs</div>
+    <div class="bucket-item">s3-cali-prd-workspace</div>
+    <div class="bucket-item">s3-prd-cali-agent-temp</div>
+    <div class="bucket-item">six-pillars-aws-sharr-mem-s3bucket...</div>
+  </div>
+
+  <!-- ══ SECCIÓN 7 ══ -->
+  <h2 class="section-title" id="s7"><span>7.</span> Monitoreo y Detección</h2>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Servicio</th><th>alcaldia-cali-workload</th><th>alcaldia-cali-portal</th><th>Control</th><th>Riesgo si ausente</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>GuardDuty</strong></td>
+        <td><span class="ic-ok">✔ Habilitado</span></td>
+        <td><span class="ic-fail">✗ Deshabilitado</span></td>
+        <td>SEC-LOG-003</td>
+        <td>Amenazas activas no detectadas</td>
+      </tr>
+      <tr>
+        <td><strong>Security Hub</strong></td>
+        <td><span class="ic-ok">✔ Habilitado</span></td>
+        <td><span class="ic-fail">✗ Deshabilitado</span></td>
+        <td>SEC-LOG-004</td>
+        <td>Sin postura de seguridad centralizada</td>
+      </tr>
+      <tr>
+        <td><strong>AWS Config</strong></td>
+        <td><span class="ic-ok">✔ Habilitado</span></td>
+        <td><span class="ic-fail">✗ Deshabilitado</span></td>
+        <td>SOC2 CC7.2</td>
+        <td>Sin compliance continuo ni inventario</td>
+      </tr>
+      <tr>
+        <td><strong>CloudTrail</strong></td>
+        <td><span class="ic-ok">✔ 2 trails activos (multi-región)</span></td>
+        <td><span class="ic-warn">⚠ Sin datos confirmados</span></td>
+        <td>CIS 3.2 / SEC-LOG-001</td>
+        <td>Sin trazabilidad de acciones en la cuenta</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin-bottom:12px;font-weight:600">CloudTrail — Detalle (alcaldia-cali-workload):</p>
+  <table class="data-table">
+    <thead>
+      <tr><th>Trail Name</th><th>Activo</th><th>Multi-Región</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>aca-cloudtier-s3-audit</code></td>
+        <td><span class="ic-ok">✔ Sí</span></td>
+        <td><span class="ic-ok">✔ Sí</span></td>
+      </tr>
+      <tr>
+        <td><code>aws-controltower-BaselineCloudTrail</code></td>
+        <td><span class="ic-ok">✔ Sí</span></td>
+        <td><span class="ic-ok">✔ Sí</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ══ SECCIÓN 8 ══ -->
+  <h2 class="section-title" id="s8"><span>8.</span> Cifrado y Compliance</h2>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Control</th><th>alcaldia-cali-workload</th><th>alcaldia-cali-portal</th><th>Marco</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Recursos sin cifrado KMS (S3/RDS/EBS)</td>
+        <td><span class="ic-ok">✔ 0</span></td>
+        <td><span class="ic-ok">✔ 0</span></td>
+        <td>CIS 2.8 / SEC-ENC-001</td>
+      </tr>
+      <tr>
+        <td>Endpoints sin SSL/TLS forzado</td>
+        <td><span class="ic-ok">✔ 0</span></td>
+        <td><span class="ic-ok">✔ 0</span></td>
+        <td>SEC-ENC-003</td>
+      </tr>
+      <tr>
+        <td>S3 Lifecycle Policies</td>
+        <td><span class="ic-fail">✗ No configuradas</span></td>
+        <td>N/A</td>
+        <td>CIS 3.3</td>
+      </tr>
+      <tr>
+        <td>Multi-AZ habilitado</td>
+        <td><span class="ic-ok">✔ Sí</span></td>
+        <td><span class="ic-ok">✔ Sí</span></td>
+        <td>Well-Architected Reliability</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout success">
+    <span>✅</span>
+    <div>El cifrado en reposo y tránsito está correctamente configurado en ambas cuentas. 0 recursos S3/RDS/EBS sin cifrar. 0 endpoints HTTP sin redirect a HTTPS. Este es un punto destacado positivo de la postura de seguridad actual.</div>
+  </div>
+
+  <!-- ══ SECCIÓN 9 ══ -->
+  <h2 class="section-title" id="s9"><span>9.</span> Hallazgos Críticos</h2>
+
+  <div class="finding-card critico">
+    <div class="f-icon">🔴</div>
+    <div class="f-content">
+      <div class="f-title">F-001 · Sin WAF activo — alcaldia-cali-portal</div>
+      <div class="f-desc">La cuenta alcaldia-cali-portal no tiene ningún WebACL WAF configurado. Los recursos web están expuestos a ataques de Capa 7: SQL Injection, XSS, DDoS, bots automatizados y exploits de vulnerabilidades conocidas sin ningún filtro perimetral.</div>
+      <div class="f-meta">Control: CIS 2.4 · SEC-WAF-001 · SOC2 CC7.1 &nbsp;|&nbsp; SLA: <strong>24 horas</strong> &nbsp;|&nbsp; Acción: Crear WebACL con Core Rule Set + Known Bad Inputs + SQL DB</div>
+    </div>
+  </div>
+
+  <div class="finding-card critico">
+    <div class="f-icon">🔴</div>
+    <div class="f-content">
+      <div class="f-title">F-002 · GuardDuty deshabilitado — alcaldia-cali-portal</div>
+      <div class="f-desc">Sin GuardDuty activo, no existe detección automática de amenazas. Actividades maliciosas como accesos no autorizados, uso anómalo de credenciales, instancias comprometidas para minería de criptomonedas o exfiltración de datos pasarían completamente inadvertidas.</div>
+      <div class="f-meta">Control: SEC-LOG-003 · SOC2 CC7.1 &nbsp;|&nbsp; SLA: <strong>24 horas</strong> &nbsp;|&nbsp; Acción: Habilitar GuardDuty + configurar delegated admin</div>
+    </div>
+  </div>
+
+  <div class="finding-card critico">
+    <div class="f-icon">🔴</div>
+    <div class="f-content">
+      <div class="f-title">F-003 · Security Hub deshabilitado — alcaldia-cali-portal</div>
+      <div class="f-desc">Sin Security Hub no hay visibilidad centralizada de la postura de seguridad, ni correlación de hallazgos de GuardDuty, Inspector, Macie y Config. Imposible mantener compliance continuo ni generar scorecards automáticos.</div>
+      <div class="f-meta">Control: SEC-LOG-004 · SOC2 CC7.2 &nbsp;|&nbsp; SLA: <strong>24 horas</strong> &nbsp;|&nbsp; Acción: Habilitar Security Hub + estándares CIS + AWS Foundational</div>
+    </div>
+  </div>
+
+  <div class="finding-card critico">
+    <div class="f-icon">🔴</div>
+    <div class="f-content">
+      <div class="f-title">F-004 · AWS Config deshabilitado — alcaldia-cali-portal</div>
+      <div class="f-desc">Sin AWS Config no existe inventario continuo de recursos ni evaluación automática de compliance rules. Cambios de configuración riesgosos (apertura de Security Groups, eliminación de cifrado, etc.) no se detectan ni alertan.</div>
+      <div class="f-meta">Control: SOC2 CC7.2 · CIS &nbsp;|&nbsp; SLA: <strong>24 horas</strong> &nbsp;|&nbsp; Acción: Habilitar AWS Config + Config Rules básicas</div>
+    </div>
+  </div>
+
+  <div class="finding-card critico">
+    <div class="f-icon">🔴</div>
+    <div class="f-content">
+      <div class="f-title">F-005 · 46 Buckets S3 sin Block Public Access confirmado — alcaldia-cali-workload</div>
+      <div class="f-desc">46 buckets reportados como "Unprotected". Entre ellos se encuentran buckets de alta sensibilidad: estado Terraform (infraestructura completa), logs CloudTrail, backups SAP, documentos Orfeo, y datos de Secretaría de Turismo. Una exposición pública de estos datos representaría un incidente de seguridad mayor.</div>
+      <div class="f-meta">Control: CIS 3.1 · SEC-S3-001 &nbsp;|&nbsp; SLA: <strong>24 horas</strong> &nbsp;|&nbsp; Acción: <code>aws s3api put-public-access-block</code> en todos los buckets sensibles</div>
+    </div>
+  </div>
+
+  <div class="finding-card alto">
+    <div class="f-icon">⚠️</div>
+    <div class="f-content">
+      <div class="f-title">F-006 · 2 Security Groups con 0.0.0.0/0 — alcaldia-cali-workload</div>
+      <div class="f-desc">Dos Security Groups tienen reglas de entrada con origen abierto al mundo. Si estas reglas incluyen puertos SSH (22), RDP (3389), o bases de datos (3306/5432), representan un vector de ataque directo sobre 82 instancias EC2.</div>
+      <div class="f-meta">Control: CIS 5.1 · SEC-NET-001 &nbsp;|&nbsp; SLA: <strong>7 días</strong> &nbsp;|&nbsp; Acción: Auditar y restringir reglas a rangos IP corporativos</div>
+    </div>
+  </div>
+
+  <div class="finding-card alto">
+    <div class="f-icon">⚠️</div>
+    <div class="f-content">
+      <div class="f-title">F-007 · WAF Logging deshabilitado — alcaldia-cali-workload</div>
+      <div class="f-desc">El WebACL CloudFront activo no tiene logging habilitado. Se pierden las trazas de ataques bloqueados, patrones de tráfico malicioso e intentos de explotación, lo que impide el análisis forense post-incidente y el ajuste fino de las reglas WAF.</div>
+      <div class="f-meta">Control: SEC-WAF-001 &nbsp;|&nbsp; SLA: <strong>7 días</strong> &nbsp;|&nbsp; Acción: Habilitar WAF logging hacia S3 o CloudWatch Logs</div>
+    </div>
+  </div>
+
+  <!-- ══ SECCIÓN 10 ══ -->
+  <h2 class="section-title" id="s10"><span>10.</span> Plan de Remediación Priorizado</h2>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Prioridad</th>
+        <th>ID</th>
+        <th>Cuenta</th>
+        <th>Hallazgo</th>
+        <th>Control CIS</th>
+        <th>Acción</th>
+        <th>SLA</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="p-critico">
+        <td><span class="risk-badge critico">🔴 CRÍTICO</span></td>
+        <td>F-001</td>
+        <td>alcaldia-cali-portal</td>
+        <td>Sin WAF</td>
+        <td>CIS 2.4</td>
+        <td>Crear WebACL + asociar a recursos web</td>
+        <td><strong>24 h</strong></td>
+      </tr>
+      <tr class="p-critico">
+        <td><span class="risk-badge critico">🔴 CRÍTICO</span></td>
+        <td>F-002</td>
+        <td>alcaldia-cali-portal</td>
+        <td>GuardDuty OFF</td>
+        <td>CC7.1</td>
+        <td>Habilitar GuardDuty + delegated admin</td>
+        <td><strong>24 h</strong></td>
+      </tr>
+      <tr class="p-critico">
+        <td><span class="risk-badge critico">🔴 CRÍTICO</span></td>
+        <td>F-003</td>
+        <td>alcaldia-cali-portal</td>
+        <td>Security Hub OFF</td>
+        <td>CC7.2</td>
+        <td>Habilitar Security Hub + estándares</td>
+        <td><strong>24 h</strong></td>
+      </tr>
+      <tr class="p-critico">
+        <td><span class="risk-badge critico">🔴 CRÍTICO</span></td>
+        <td>F-004</td>
+        <td>alcaldia-cali-portal</td>
+        <td>AWS Config OFF</td>
+        <td>SOC2 CC7.2</td>
+        <td>Habilitar AWS Config + Config Rules</td>
+        <td><strong>24 h</strong></td>
+      </tr>
+      <tr class="p-critico">
+        <td><span class="risk-badge critico">🔴 CRÍTICO</span></td>
+        <td>F-005</td>
+        <td>alcaldia-cali-workload</td>
+        <td>46 S3 sin Block Public Access</td>
+        <td>CIS 3.1</td>
+        <td>Remediar masivamente todos los buckets sensibles</td>
+        <td><strong>24 h</strong></td>
+      </tr>
+      <tr class="p-alto">
+        <td><span class="risk-badge alto">⚠️ ALTO</span></td>
+        <td>F-006</td>
+        <td>alcaldia-cali-workload</td>
+        <td>2 SGs abiertos a internet</td>
+        <td>CIS 5.1</td>
+        <td>Auditar y restringir Security Groups</td>
+        <td><strong>7 días</strong></td>
+      </tr>
+      <tr class="p-alto">
+        <td><span class="risk-badge alto">⚠️ ALTO</span></td>
+        <td>F-007</td>
+        <td>alcaldia-cali-workload</td>
+        <td>WAF logging OFF</td>
+        <td>SEC-WAF-001</td>
+        <td>Habilitar WAF logging → S3/CloudWatch</td>
+        <td><strong>7 días</strong></td>
+      </tr>
+      <tr class="p-medio">
+        <td><span class="risk-badge medio">🔵 MEDIO</span></td>
+        <td>F-008</td>
+        <td>alcaldia-cali-workload</td>
+        <td>Sin S3 Lifecycle Policies</td>
+        <td>CIS 3.3</td>
+        <td>Configurar lifecycle en 46 buckets</td>
+        <td><strong>30 días</strong></td>
+      </tr>
+      <tr class="p-bajo">
+        <td><span class="risk-badge bajo">✅ BAJO</span></td>
+        <td>F-009</td>
+        <td>Ambas</td>
+        <td>MFA root no confirmado</td>
+        <td>CIS 1.2</td>
+        <td>Verificar manualmente MFA en root</td>
+        <td><strong>Sprint</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Evidencias -->
+  <h2 class="section-title"><span>📁</span> Evidencias y Trazabilidad</h2>
+  <table class="data-table">
+    <thead><tr><th>Archivo</th><th>Ruta</th></tr></thead>
+    <tbody>
+      <tr><td>Dashboard HTML</td><td><code>outputs/AACE_Dashboard.html</code></td></tr>
+      <tr><td>Matriz de Riesgo CSV</td><td><code>outputs/AACE_Risk_Matrix.csv</code></td></tr>
+      <tr><td>WAF Audit (workload)</td><td><code>outputs/alcaldia-cali-workload_waf_audit.json</code></td></tr>
+      <tr><td>S3 Audit (workload)</td><td><code>outputs/alcaldia-cali-workload_s3_audit.json</code></td></tr>
+      <tr><td>Logging Audit (workload)</td><td><code>outputs/alcaldia-cali-workload_logging_audit.json</code></td></tr>
+      <tr><td>Monitoring Audit (workload)</td><td><code>outputs/alcaldia-cali-workload_monitoring_audit.json</code></td></tr>
+      <tr><td>EC2 Audit (workload)</td><td><code>outputs/alcaldia-cali-workload_ec2_audit.json</code></td></tr>
+      <tr><td>Encryption Audit (workload)</td><td><code>outputs/alcaldia-cali-workload_encryption_audit.json</code></td></tr>
+      <tr><td>WAF Audit (portal)</td><td><code>outputs/alcaldia-cali-portal_waf_audit.json</code></td></tr>
+      <tr><td>Monitoring Audit (portal)</td><td><code>outputs/alcaldia-cali-portal_monitoring_audit.json</code></td></tr>
+      <tr><td>Reporte Mensual MD</td><td><code>reports/auditoria-mensual/auditoria-mensual-2026-08-12.md</code></td></tr>
+      <tr><td><strong>Este reporte HTML</strong></td><td><code>reports/auditoria-mensual/reporte-seguridad-agosto-2026.html</code></td></tr>
+    </tbody>
+  </table>
+
+  <table class="data-table">
+    <thead><tr><th>Campo de Trazabilidad</th><th>Valor</th></tr></thead>
+    <tbody>
+      <tr><td>Timestamp de auditoría</td><td><code>2026-08-12T21:29:42.606Z</code></td></tr>
+      <tr><td>Total auditorías en historial</td><td>14</td></tr>
+      <tr><td>Herramienta</td><td>AEGIS Security Agent v2.1 + Kiro IDE</td></tr>
+      <tr><td>Framework de baseline</td><td>CIS AWS Benchmark v3.0 / SOC2 TSC / AWS Well-Architected</td></tr>
+      <tr><td>Versión baseline corporativo</td><td>Baseline_Seguridad_AWS.md v2.1 — Agosto 2026</td></tr>
+      <tr><td>Próxima auditoría mensual</td><td>2026-09-12</td></tr>
+    </tbody>
+  </table>
+
+</div><!-- end report-body -->
+
+<footer class="report-footer">
+  <strong>Alcaldía de Santiago de Cali — Infraestructura AWS</strong><br/>
+  Generado automáticamente por AEGIS Security Agent v2.1 integrado con Kiro — 12 de Agosto de 2026<br/>
+  Clasificación: <strong>CONFIDENCIAL</strong> · Solo uso interno del equipo de seguridad
+</footer>
+
+</body>
+</html>

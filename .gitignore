@@ -1,0 +1,8 @@
+node_modules/
+outputs/
+history/
+.env
+.aws/
+*.log
+.DS_Store
+

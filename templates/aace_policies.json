@@ -1,0 +1,27 @@
+{
+  "policy_version": "1.0",
+  "framework": "Aegis_Baseline_v1",
+  "controls": [
+    {
+      "id": "AACE-001",
+      "service": "S3",
+      "check": "check_bucket_public_access",
+      "requirement": "S3 buckets must not have public read/write access",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "AACE-002",
+      "service": "IAM",
+      "check": "check_root_mfa_enabled",
+      "requirement": "MFA must be enabled for root user",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "AACE-003",
+      "service": "WAF",
+      "check": "check_waf_global_enabled",
+      "requirement": "WAF must be associated with CloudFront or ALB",
+      "severity": "HIGH"
+    }
+  ]
+}
